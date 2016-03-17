@@ -1,7 +1,20 @@
-
+import numpy as np
 
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+
+#add noise
+mnist.train.images = map(lambda y: map(lambda x: x + np.random.normal(0,5), y)
+                         , mnist.train.images)
+mnist.test.images = map(lambda y: map(lambda x: x + np.random.normal(0,5), y)
+                         , mnist.train.images)
+
+mnist.validation.images = map(lambda y: map(lambda x: x + np.random.normal(0,5), y)
+                         , mnist.train.images)
+
+
+
+
 
 import tensorflow as tf
 sess = tf.InteractiveSession()
