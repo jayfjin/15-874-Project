@@ -4,13 +4,9 @@ from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
 #add noise
-mnist.train._images = map(lambda y: map(lambda x: x + np.random.normal(0,5), y)
-                         , mnist.train._images)
-mnist.test._images = map(lambda y: map(lambda x: x + np.random.normal(0,5), y)
-                         , mnist.train._images)
-
-mnist.validation._images = map(lambda y: map(lambda x: x + np.random.normal(0,5), y)
-                         , mnist.train._images)
+mnist.train._images = map(lambda y: map(lambda x: 0 if x == 0 else x + np.random.normal(0,0.05), y), mnist.train._images)
+mnist.test._images = map(lambda y: map(lambda x: 0 if x == 0 else x + np.random.normal(0,0.05), y), mnist.test._images)
+mnist.validation._images = map(lambda y: map(lambda x: 0 if x == 0 else x + np.random.normal(0,0.05), y), mnist.validation._images)
 
 import tensorflow as tf
 sess = tf.InteractiveSession()
