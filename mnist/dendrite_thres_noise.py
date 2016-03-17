@@ -1,14 +1,19 @@
 import numpy as np
+import multiprocessing
+import tensorflow as tf
 
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
-#add noise
-mnist.train._images = map(lambda y: map(lambda x: 0 if x == 0 else x + np.random.normal(0,0.05), y), mnist.train._images)
-mnist.test._images = map(lambda y: map(lambda x: 0 if x == 0 else x + np.random.normal(0,0.05), y), mnist.test._images)
-mnist.validation._images = map(lambda y: map(lambda x: 0 if x == 0 else x + np.random.normal(0,0.05), y), mnist.validation._images)
+def add_noise(x):
+  return map(lambda y: 0 if y == 0 else y + np.random.normal(0,0.05), x)
 
-import tensorflow as tf
+pool = multiprocessing.Pool()
+#add noise
+mnist.train._images = pool.map(add_noise, mnist.train._images)
+mnist.test._images = pool.map(add_noise, mnist.test._images)
+mnist.validation._images = pool.map(add_noise, mnist.validation._images)
+
 sess = tf.InteractiveSession()
 
 x = tf.placeholder(tf.float32, shape=[None, 784])
