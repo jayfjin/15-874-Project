@@ -8,11 +8,44 @@ mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 def add_noise(x):
   return map(lambda y: 0 if y == 0 else y + np.random.normal(0,0.05), x)
 
-pool = multiprocessing.Pool()
+#pool = multiprocessing.Pool()
 #add noise
-mnist.train._images = pool.map(add_noise, mnist.train._images)
-mnist.test._images = pool.map(add_noise, mnist.test._images)
-mnist.validation._images = pool.map(add_noise, mnist.validation._images)
+#mnist.train._images = pool.map(add_noise, mnist.train._images)
+#mnist.test._images = pool.map(add_noise, mnist.test._images)
+#mnist.validation._images = pool.map(add_noise, mnist.validation._images)
+
+for i in xrange(len(mnist.train._images)):
+  for j in xrange(len(mnist.train._images[0])):
+    noise = np.random.normal(0, 0.05)
+    pixel = mnist.train._images[i][j]
+    if pixel + noise > 1:
+      mnist.train._images[i][j] = 1 - (pixel + noise)
+    elif pixel + noise < 0:
+      mnist.train._images[i][j] = 1 + (pixel + noise)
+    else:
+      mnist.train._images[i][j] = pixel + noise
+
+for i in xrange(len(mnist.test._images)):
+  for j in xrange(len(mnist.test._images[0])):
+    noise = np.random.normal(0, 0.05)
+    pixel = mnist.test._images[i][j]
+    if pixel + noise > 1:
+      mnist.test._images[i][j] = 1 - (pixel + noise)
+    elif pixel + noise < 0:
+      mnist.test._images[i][j] = 1 + (pixel + noise)
+    else:
+      mnist.test._images[i][j] = pixel + noise
+ 
+for i in xrange(len(mnist.validation._images)):
+  for j in xrange(len(mnist.validation._images[0])):
+    noise = np.random.normal(0, 0.05)
+    pixel = mnist.validation._images[i][j]
+    if pixel + noise > 1:
+      mnist.validation._images[i][j] = 1 - (pixel + noise)
+    elif pixel + noise < 0:
+      mnist.validation._images[i][j] = 1 + (pixel + noise)
+    else:
+      mnist.validation._images[i][j] = pixel + noise
 
 sess = tf.InteractiveSession()
 
