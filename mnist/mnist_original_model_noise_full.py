@@ -4,9 +4,11 @@ mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 import skimage
 
 b_size = 50
-mnist.train._images = skimage.util.random_noise(mnist.train._images, mode='gaussian', var=0.5)
-mnist.test._images = skimage.util.random_noise(mnist.test._images, mode='gaussian', var=0.5)
-mnist.validation._images = skimage.util.random_noise(mnist.validation._images, mode='gaussian', var=0.5)
+mnist.train._images = skimage.util.random_noise(mnist.train._images, mode='gaussian', var=1)
+mnist.test._images = skimage.util.random_noise(mnist.test._images, mode='gaussian', var=1)
+mnist.validation._images = skimage.util.random_noise(mnist.validation._images, mode='gaussian', var=1)
+
+print(mnist.train._images[0])
 
 import tensorflow as tf
 sess = tf.InteractiveSession()
@@ -16,38 +18,57 @@ y_ = tf.placeholder(tf.float32, shape=[None, 10])
 
 W = tf.Variable(tf.zeros([784,10]))
 b = tf.Variable(tf.zeros([784, 10]))
+b2 = tf.Variable(tf.zeros([10]))
 
 sess.run(tf.initialize_all_variables())
 
 def fully_connected(x, b, W):
   (height, width) = W.get_shape().as_list()
+  batch_size = tf.shape(x)[0]
   x_1 = tf.reshape(x, [-1, height, 1])
   x_2 = tf.tile(x_1, [1, 1, width])
   x_3 = tf.add(x_2, b)
   W_t = tf.transpose(W)
   x_hat = tf.nn.relu(x_3)
-  list_result = [tf.constant(0)]*b_size
-  for i in xrange(0, b_size):
+  list_result = []
+  #batch_size = tf.reshape(tf.shape(x)[0])
+  for i in xrange(b_size):
     matmul_result = tf.matmul(W_t, tf.reshape(tf.slice(x_hat, [i, 0, 0], [1, -1, -1]), [height, width]))
-    list_result[i] = tf.gather(tf.reshape(matmul_result, [-1]), [j*width+j for j in xrange(width)])
+    list_result.append(tf.gather(tf.reshape(matmul_result, [-1]), [j*width+j for j in xrange(width)]))
 
   return tf.pack(list_result)
 
-x_c = fully_connected(x, b, W)
+x_c = fully_connected(x, b, W) + b2
 y = tf.nn.softmax(x_c)
 cross_entropy = -tf.reduce_sum(y_*tf.log(y))
 train_step = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
 
 for i in range(1000):
-  print(i)
   batch = mnist.train.next_batch(b_size)
   train_step.run(feed_dict={x: batch[0], y_: batch[1]})
 
-correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
+#num_test_iterations = 1# 1000 / b_size
+#test_input_index = 0
+#for i in xrange(num_test_iterations):
+#  test_x, test_y = mnist.test.next_batch(b_size)
+#  accuracy = tf.equal(tf.argmax(y, 1), tf.argmax(test_y, 1))
+#  print(accuracy.eval(feed_dict={x: test_x}))
+mnist.test._index_in_epoch = 0
+num_test_iterations = 10000 / 50
+num_correct = 0.0
+for i in xrange(num_test_iterations):
+  test_x, test_y = mnist.test.next_batch(50)
+  accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(y, 1), tf.argmax(test_y, 1)), tf.float32))
+  acc = accuracy.eval(feed_dict={x: test_x})
+  num_correct += acc
 
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+print("Total accuracy is %f" % (num_correct / num_test_iterations))
+#print(y.eval(feed_dict={x: mnist.test.images}))
+#correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
 
-print(accuracy.eval(feed_dict={x: mnist.test.images, y_: mnist.test.labels}))
+#accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+#print(accuracy.eval(feed_dict={x: mnist.test.images, y_: mnist.test.labels}))
 
 '''def weight_variable(shape):
   initial = tf.truncated_normal(shape, stddev=0.1)
