@@ -7,6 +7,21 @@ import tensorflow as tf
 import numpy as np
 import math
 
+b_size = 50
+def fully_connected(x, b, W):
+  (height, width) = W.get_shape().as_list()
+  x_1 = tf.reshape(x, [-1, height, 1])
+  x_2 = tf.tile(x_1, [1, 1, width])
+  x_3 = tf.add(x_2, b)
+  W_t = tf.transpose(W)
+  x_hat = tf.nn.relu(x_3)
+  list_result = []
+  for i in xrange(b_size):
+    matmul_result = tf.matmul(W_t, tf.reshape(tf.slice(x_hat, [i, 0, 0], [1, -1, -1]), [height, width]))
+    list_result.append(tf.gather(tf.reshape(matmul_result, [-1]), [j*width+j for j in xrange(width)]))
+
+  return tf.pack(list_result)
+
 # %% Autoencoder definition
 def autoencoder(dimensions=[784, 512, 256, 64]):
     """Build a deep autoencoder w/ tied weights.
@@ -39,9 +54,14 @@ def autoencoder(dimensions=[784, 512, 256, 64]):
             tf.random_uniform([n_input, n_output],
                               -1.0 / math.sqrt(n_input),
                               1.0 / math.sqrt(n_input)))
-        b = tf.Variable(tf.zeros([n_output]))
+        b1 = tf.Variable(
+            tf.random_uniform([n_input, n_output],
+                              -1.0 / math.sqrt(n_input),
+                              1.0 / math.sqrt(n_input)))
+
+        b2 = tf.Variable(tf.zeros([n_output]))
         encoder.append(W)
-        output = tf.nn.tanh(tf.matmul(current_input, W) + b)
+        output = tf.nn.tanh(fully_connected(current_input, b1, W) + b2)
         current_input = output
 
     # %% latent representation
@@ -50,9 +70,17 @@ def autoencoder(dimensions=[784, 512, 256, 64]):
 
     # %% Build the decoder using the same weights
     for layer_i, n_output in enumerate(dimensions[:-1][::-1]):
+        n_input = int(current_input.get_shape()[1])
         W = tf.transpose(encoder[layer_i])
-        b = tf.Variable(tf.zeros([n_output]))
-        output = tf.nn.tanh(tf.matmul(current_input, W) + b)
+        (W_h, W_w) = W.get_shape().as_list()
+        b1 = tf.Variable(
+            tf.random_uniform([W_h, W_w],
+                              -1.0 / math.sqrt(n_input),
+                              1.0 / math.sqrt(n_input)))
+
+
+        b2 = tf.Variable(tf.zeros([n_output]))
+        output = tf.nn.tanh(fully_connected(current_input, b1, W) + b2)
         current_input = output
 
     # %% now have the reconstruction through the network
@@ -68,7 +96,6 @@ def test_mnist():
     import tensorflow as tf
     import tensorflow.examples.tutorials.mnist.input_data as input_data
     import matplotlib
-    matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
     # %%
@@ -88,11 +115,10 @@ def test_mnist():
 
     # %%
     # Fit all training data
-    batch_size = 50
     n_epochs = 10
     for epoch_i in range(n_epochs):
-        for batch_i in range(mnist.train.num_examples // batch_size):
-            batch_xs, _ = mnist.train.next_batch(batch_size)
+        for batch_i in range(mnist.train.num_examples // b_size):
+            batch_xs, _ = mnist.train.next_batch(b_size)
             train = np.array([img - mean_img for img in batch_xs])
             sess.run(optimizer, feed_dict={ae['x']: train})
         print(epoch_i, sess.run(ae['cost'], feed_dict={ae['x']: train}))
@@ -111,7 +137,7 @@ def test_mnist():
             np.reshape([recon[example_i, :] + mean_img], (28, 28)))
     fig.show()
     plt.draw()
-    # plt.waitforbuttonpress()
+    fig.waitforbuttonpress()
 
 # %%
 if __name__ == '__main__':
