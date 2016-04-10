@@ -2,10 +2,11 @@ from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
 import skimage
+import math
 
-mnist.train._images = skimage.util.random_noise(mnist.train._images, mode='gaussian', var=0.5)
-mnist.test._images = skimage.util.random_noise(mnist.test._images, mode='gaussian', var=0.5)
-mnist.validation._images = skimage.util.random_noise(mnist.validation._images, mode='gaussian', var=0.5)
+#mnist.train._images = skimage.util.random_noise(mnist.train._images, mode='gaussian', var=1)
+#mnist.test._images = skimage.util.random_noise(mnist.test._images, mode='gaussian', var=1)
+#mnist.validation._images = skimage.util.random_noise(mnist.validation._images, mode='gaussian', var=1)
 
 import tensorflow as tf
 sess = tf.InteractiveSession()
@@ -13,18 +14,29 @@ sess = tf.InteractiveSession()
 x = tf.placeholder(tf.float32, shape=[None, 784])
 y_ = tf.placeholder(tf.float32, shape=[None, 10])
 
-W = tf.Variable(tf.zeros([784,10]))
-b = tf.Variable(tf.zeros([10]))
+W = tf.Variable(  tf.random_uniform([784, 80],
+                              -1.0 / math.sqrt(784),
+                              1.0 / math.sqrt(784)))
 
-sess.run(tf.initialize_all_variables())
+b = tf.Variable(tf.zeros([80]))
 
-y = tf.nn.softmax(tf.matmul(x,W) + b)
+W1 = tf.Variable(  tf.random_uniform([80, 10],
+                              -1.0 / math.sqrt(100),
+                              1.0 / math.sqrt(100)))
+
+b1 = tf.Variable(tf.zeros([10]))
+
+
+y1 = tf.nn.sigmoid(tf.matmul(x,W) + b)
+
+y = tf.nn.softmax(tf.matmul(y1,W1) + b1)
 
 cross_entropy = -tf.reduce_sum(y_*tf.log(y))
 
+sess.run(tf.initialize_all_variables())
 train_step = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
 
-for i in range(1000):
+for i in range(20000):
   batch = mnist.train.next_batch(50)
   train_step.run(feed_dict={x: batch[0], y_: batch[1]})
 
@@ -34,7 +46,7 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 print(accuracy.eval(feed_dict={x: mnist.test.images, y_: mnist.test.labels}))
 
-def weight_variable(shape):
+'''def weight_variable(shape):
   initial = tf.truncated_normal(shape, stddev=0.1)
   return tf.Variable(initial)
 
@@ -91,5 +103,5 @@ for i in range(20000):
   train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
 print("test accuracy %g"%accuracy.eval(feed_dict={
-    x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+    x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))'''
 
